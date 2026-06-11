@@ -42,10 +42,43 @@
   .alt-comment li{font-size:10.4pt;margin:3px 0;}
   .ce-comment p{font-size:10.6pt;margin:4px 0;}
 
-  @media print{body{background:white}.page{margin:0;box-shadow:none;width:auto;min-height:auto}.no-print{display:none}}
+
+
+  /* ===== TRAVA DE ACESSO PROFESSOR MOREIRA ===== */
+  body.locked{overflow:hidden;background:#f4f1e8;}
+  .locked-content{display:none;}
+  body.unlocked .locked-content{display:block;}
+  body.unlocked #lockScreen{display:none;}
+  #lockScreen{position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,#fffdf4,#f7fbff);display:flex;align-items:center;justify-content:center;padding:20px;color:#000;}
+  .lock-card{width:min(92vw,520px);background:#fff;border:3px solid #111;border-radius:24px;padding:28px 24px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,.16);}
+  .lock-seal{display:inline-block;border:2px solid #d6a11b;border-radius:999px;padding:8px 16px;font-weight:900;margin-bottom:16px;background:#fff;color:#000;letter-spacing:.4px;}
+  .lock-card h1{font-size:28pt;line-height:1.05;margin:6px 0 10px;color:#000;text-transform:uppercase;}
+  .lock-card p{font-size:12.5pt;color:#111;margin:8px 0;}
+  .lock-card input{width:100%;border:2px solid #111;border-radius:14px;padding:14px 12px;font-size:14pt;margin:14px 0 12px;text-align:center;color:#000;background:#fff;}
+  .lock-card button{width:100%;border:0;border-radius:14px;background:#111;color:#fff;padding:14px 18px;font-size:13pt;font-weight:900;cursor:pointer;text-transform:uppercase;}
+  .lock-card button:hover{background:#333;}
+  .lock-error{display:none;color:#b42318;font-weight:800;margin-top:8px;font-size:11pt;}
+  .student .aluno-nome{font-weight:900;text-transform:uppercase;}
+  .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;opacity:.035;font-size:34pt;font-weight:900;text-align:center;text-transform:uppercase;transform:rotate(-28deg);color:#000;line-height:1.2;padding:20mm;}
+  .page>*:not(.watermark){position:relative;z-index:1;}
+
+  @media print{body{background:white}.page{margin:0;box-shadow:none;width:auto;min-height:auto}.no-print,#lockScreen{display:none!important}.locked-content{display:block!important}}
 </style>
 </head>
-<body>
+<body class="locked">
+<div id="lockScreen" class="no-print">
+  <div class="lock-card">
+    <div class="lock-seal">CURSO DE CONTABILIDADE PROFESSOR MOREIRA</div>
+    <h1>Apostila Premium</h1>
+    <p><b>Direito Administrativo</b></p>
+    <p>Digite seu nome completo para liberar o material.</p>
+    <input id="studentInput" type="text" placeholder="Nome completo do aluno" autocomplete="name">
+    <button onclick="unlockMaterial()">Liberar Apostila</button>
+    <div id="lockError" class="lock-error">Digite o nome completo do aluno.</div>
+    <p style="font-size:10.5pt;margin-top:14px"><b>WhatsApp:</b> (61) 98532-3574</p>
+  </div>
+</div>
+<main id="apostila" class="locked-content">
 <section class="page cover">
   <div class="seal">APOSTILA PREMIUM PROFESSOR MOREIRA</div>
   <h1>Direito<br>Administrativo</h1>
@@ -54,8 +87,9 @@
     <p><b>Curso de Contabilidade Professor Moreira</b></p>
     <p>Material de revisão para prova, com foco em memorização, pegadinhas e raciocínio de banca.</p>
     <p><b>WhatsApp:</b> (61) 98532-3574</p>
+    <p><b>Material individual:</b> uso exclusivo do aluno identificado na liberação.</p>
   </div>
-  <div class="student">Aluno(a): _______________________________________________</div>
+  <div class="student">Aluno(a): <span class="aluno-nome">_______________________________________________</span></div>
   <div class="footer">Curso de Contabilidade Professor Moreira - whatsapp (61) 985323574 -</div>
 </section>
 
@@ -1146,4 +1180,57 @@
 <p>29. A</p>
 <p>30. A</p>
 </div></div><div class="footer">Curso de Contabilidade Professor Moreira - whatsapp (61) 985323574 -</div></section>
+</main>
+<script>
+(function(){
+  const saved = localStorage.getItem('pm_apostila_aluno_direito_administrativo');
+  if(saved){ liberar(saved); }
+  const input = document.getElementById('studentInput');
+  if(input){
+    input.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ unlockMaterial(); } });
+  }
+})();
+function sanitizeName(name){
+  return String(name || '').replace(/\s+/g, ' ').trim();
+}
+function escapeHtml(text){
+  return String(text).replace(/[&<>"']/g, function(ch){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[ch]; });
+}
+function unlockMaterial(){
+  const input = document.getElementById('studentInput');
+  const name = sanitizeName(input ? input.value : '');
+  if(name.length < 3){
+    const err = document.getElementById('lockError');
+    if(err) err.style.display = 'block';
+    if(input) input.focus();
+    return;
+  }
+  localStorage.setItem('pm_apostila_aluno_direito_administrativo', name);
+  liberar(name);
+}
+function liberar(name){
+  document.body.classList.remove('locked');
+  document.body.classList.add('unlocked');
+  const safe = escapeHtml(name);
+  document.querySelectorAll('.aluno-nome').forEach(el => el.innerHTML = safe);
+  document.querySelectorAll('.footer').forEach(function(el){
+    if(!el.dataset.base){ el.dataset.base = el.innerHTML; }
+    el.innerHTML = el.dataset.base + ' Aluno: <b>' + safe + '</b> -';
+  });
+  document.querySelectorAll('.page').forEach(function(page){
+    if(!page.querySelector('.watermark')){
+      const wm = document.createElement('div');
+      wm.className = 'watermark';
+      wm.innerHTML = safe + '<br>USO INDIVIDUAL';
+      page.insertBefore(wm, page.firstChild);
+    }else{
+      page.querySelector('.watermark').innerHTML = safe + '<br>USO INDIVIDUAL';
+    }
+  });
+}
+function trocarAluno(){
+  localStorage.removeItem('pm_apostila_aluno_direito_administrativo');
+  location.reload();
+}
+</script>
 </body></html>
